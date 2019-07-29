@@ -9,7 +9,7 @@ struct cpu {
 
   // PC address of currently executing instruction is held in a special register called program counter
   //index of current instruction
-  pc = [3]
+  int pc = 0
 
   // registers (array) //we'll execute code that stores the value 8 in a register
   unsigned char registers[8];
