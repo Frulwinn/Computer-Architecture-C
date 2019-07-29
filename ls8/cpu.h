@@ -8,8 +8,8 @@ struct cpu {
   unsigned char x;
 
   // PC address of currently executing instruction is held in a special register called program counter
-  //??
-  unsigned char pc = [];
+  //index of current instruction
+  pc = [3]
 
   // registers (array) //we'll execute code that stores the value 8 in a register
   unsigned char registers[8];
@@ -31,6 +31,7 @@ enum alu_op {
 
 #define LDI  0b10000010
 #define PRN  0b01000111
+#define HLT  0b00000001
 // TODO: more instructions here. These can be used in cpu_run().
 
 // Function declarations
