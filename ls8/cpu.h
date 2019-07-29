@@ -7,8 +7,9 @@ struct cpu {
   //The type for a single unsigned byte in C is:
   unsigned char x;
 
-  // PC
+  // PC address of currently executing instruction is held in a special register called program counter
   //??
+  unsigned char pc = [];
 
   // registers (array) //we'll execute code that stores the value 8 in a register
   unsigned char registers[8];

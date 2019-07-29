@@ -73,4 +73,6 @@ void cpu_ram_write(struct cpu *cpu, unsigned char memory) {
 void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
+  //first, the PC, registers, and RAM should be cleared to zero
+  memset(cpu, 0, x);
 }
