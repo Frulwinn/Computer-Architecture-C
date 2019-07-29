@@ -4,10 +4,18 @@
 // Holds all information about the CPU
 struct cpu {
   // TODO
+  //The type for a single unsigned byte in C is:
+  unsigned char x;
+
   // PC
-  // registers (array)
-  // ram (array)
-};
+  //??
+
+  // registers (array) //we'll execute code that stores the value 8 in a register
+  unsigned char registers[8];
+
+  // ram (array) //8-bit memory addressing
+  unsigned char memory[8];
+}
 
 // ALU operations
 enum alu_op {
