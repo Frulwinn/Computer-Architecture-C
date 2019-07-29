@@ -59,11 +59,11 @@ void cpu_run(struct cpu *cpu)
 }
 
 //Added RAM functions
-void cpu_ram_read(struct cpu *cpu) {
+void cpu_ram_read(struct cpu *cpu, unsigned char memory) {
 
 }
 
-void cpu_ram_write(struct cpu *cpu) {
+void cpu_ram_write(struct cpu *cpu, unsigned char memory) {
 
 }
 
