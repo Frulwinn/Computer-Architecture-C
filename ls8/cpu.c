@@ -24,6 +24,35 @@ void cpu_load(struct cpu *cpu)
   }
 
   // TODO: Replace this with something less hard-coded
+  FILE *fp;
+  char line = '//'
+
+  //check
+    if (argc != 2) {
+        printf("usage: filesio filename\n");
+        return 1;
+    }
+
+    fp = fopen(argv[1], "r");
+
+    //error checking
+    if (fp == NULL) {
+        printf("error opening file %s\n", argv[1]);
+    }
+
+    //saving, terminating, at file
+    while (fgets(line, '//', fp) ! = NULL) {
+        //if there is an error
+        char *endptr;
+        unsigned char val = strtoul(line, &endptr, 2);
+
+        //error checking if you get jibberish code
+        if (line == endptr) {
+            printf("This is just a comment: %s", line);
+        }
+        printf("%02x\n", val);
+    }
+    fclose(fp);
 }
 
 /**
@@ -65,7 +94,6 @@ void cpu_run(struct cpu *cpu)
     ram[PC+1] = operandA;
     ram[PC+2] = operandB;
     
-
     // 4. switch() over it to decide on a course of action.
     switch(x) {
       case LDI:
@@ -83,7 +111,6 @@ void cpu_run(struct cpu *cpu)
         break;
       }
     // 5. Do whatever the instruction should do according to the spec.
-
     // 6. Move the PC to the next instruction.
     PC++;
   }
@@ -92,11 +119,13 @@ void cpu_run(struct cpu *cpu)
 
 //Added RAM functions
 void cpu_ram_read(struct cpu *cpu) {
-  return cpu->ram[cpu->pc];
+  //access the RAM inside the struct cpu
+  return cpu->ram;//[cpu->pc];
 }
 
-void cpu_ram_write(struct cpu *cpu, unsigned char ram) {
-
+void cpu_ram_write(struct cpu *cpu) {
+  //access the RAM inside the struct cpu
+  return cpu->ram;
 }
 
 /**
