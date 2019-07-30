@@ -46,30 +46,56 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
 void cpu_run(struct cpu *cpu)
 {
   int running = 1; // True until we get a HLT instruction
-  int cur_value = 0; //value of current instruction
+  int PC = 0; //value of current instruction
+  int IR[] = {
+    LDI,
+    PRN,
+    HLT
+    };//instruction register
 
   while (running) {
     // TODO
     // 1. Get the value of the current instruction (in address PC).
-
+    unsigned char x = ram[PC];
     // 2. Figure out how many operands this next instruction requires
-
+    registers[operandA] += registers[operandB];
     // 3. Get the appropriate value(s) of the operands following this instruction
+    //read the bytes at PC+1 and PC+2 from RAM into variables operandA and operandB
+    cpu_ram_read() {
+      ram[PC+1] = operandA;
+      ram[PC+2] = operandB;
+    }
 
     // 4. switch() over it to decide on a course of action.
+    switch(x) {
+      case LDI:
+        print("LDI\n")
+        break;
 
+      case PRN:
+        print("PRN\n")
+        break;
+
+      default:
+        print("exit loop\n")
+        HLT;
+        running = 0
+        break;
+      }
     // 5. Do whatever the instruction should do according to the spec.
 
     // 6. Move the PC to the next instruction.
+    PC++;
   }
+  return 0;
 }
 
 //Added RAM functions
-void cpu_ram_read(struct cpu *cpu, unsigned char memory) {
-
+void cpu_ram_read(struct cpu *cpu) {
+  return cpu->ram[cpu->pc];
 }
 
-void cpu_ram_write(struct cpu *cpu, unsigned char memory) {
+void cpu_ram_write(struct cpu *cpu, unsigned char ram) {
 
 }
 
