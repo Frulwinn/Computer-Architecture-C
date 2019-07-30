@@ -4,6 +4,10 @@
 // Holds all information about the CPU
 struct cpu {
   // TODO
+
+  //The type for a single unsigned byte in C is:
+  unsigned char x;
+
   // PC address of currently executing instruction is held in a special register called program counter
   //index of current instruction
   int PC;
@@ -12,8 +16,8 @@ struct cpu {
   unsigned char registers[8];
 
   // ram (array) //8-bit memory addressing
-  unsigned char memory[256];
-}
+  unsigned char ram[256];
+};
 
 // ALU operations
 enum alu_op {

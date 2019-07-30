@@ -61,25 +61,25 @@ void cpu_run(struct cpu *cpu)
     registers[operandA] += registers[operandB];
     // 3. Get the appropriate value(s) of the operands following this instruction
     //read the bytes at PC+1 and PC+2 from RAM into variables operandA and operandB
-    cpu_ram_read() {
-      ram[PC+1] = operandA;
-      ram[PC+2] = operandB;
-    }
+    cpu_ram_read(&cpu); 
+    ram[PC+1] = operandA;
+    ram[PC+2] = operandB;
+    
 
     // 4. switch() over it to decide on a course of action.
     switch(x) {
       case LDI:
-        print("LDI\n")
+        print("LDI\n");
         break;
 
       case PRN:
-        print("PRN\n")
+        print("PRN\n");
         break;
 
       default:
-        print("exit loop\n")
+        print("exit loop\n");
         HLT;
-        running = 0
+        running = 0;
         break;
       }
     // 5. Do whatever the instruction should do according to the spec.
