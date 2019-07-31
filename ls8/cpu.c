@@ -1,4 +1,6 @@
 #include "cpu.h"
+#include <stdio.h>
+#include <stlib.h>
 
 #define DATA_LEN 6
 
@@ -25,7 +27,7 @@ void cpu_load(struct cpu *cpu)
 
   // TODO: Replace this with something less hard-coded
   FILE *fp;
-  char line = '//'
+  char line = [1024]
 
   //check
     if (argc != 2) {
@@ -41,7 +43,7 @@ void cpu_load(struct cpu *cpu)
     }
 
     //saving, terminating, at file
-    while (fgets(line, '//', fp) ! = NULL) {
+    while (fgets(line, 1024, fp) ! = NULL) {
         //if there is an error
         char *endptr;
         unsigned char val = strtoul(line, &endptr, 2);
@@ -75,27 +77,37 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
 void cpu_run(struct cpu *cpu)
 {
   int running = 1; // True until we get a HLT instruction
-  int PC = 0; //value of current instruction
-  int IR[] = {
-    LDI,
-    PRN,
-    HLT
-    };//instruction register
 
   while (running) {
-    // TODO
-    // 1. Get the value of the current instruction (in address PC).
-    unsigned char x = ram[PC];
-    // 2. Figure out how many operands this next instruction requires
-    registers[operandA] += registers[operandB];
-    // 3. Get the appropriate value(s) of the operands following this instruction
+    //4 variables opA, opB, IR (use ram read in these var)
+    unsigned char opA = 0;
+    unsigned char opB = 0;
+    unsigned char IR = cpu_ram_read;
+    //need another variable using bitwise to read by shifting 6
+    unsigned int num_op = IR >> 6;
+
+    //if else what to do when you have 2 or 1 operand
+    //ram read cpu
+    // Get the appropriate value(s) of the operands following this instruction
     //read the bytes at PC+1 and PC+2 from RAM into variables operandA and operandB
-    cpu_ram_read(&cpu); 
-    ram[PC+1] = operandA;
-    ram[PC+2] = operandB;
+    if (num_op == 2) {
+      opA = cpu_ram_read(cpu->PC + 1);
+      opB = cpu_ram_read(cpu->PC + 2);
+    } else if (num_op == 1) {
+      opA = cpu_ram_read(cpu->PC + 1);
+    } else {
+      return 0;
+    }
+
+    // Get the value of the current instruction (in address PC).
+    // Figure out how many operands this next instruction requires
+    int pc_instruction = IR;
     
-    // 4. switch() over it to decide on a course of action.
-    switch(x) {
+    //state with hex decimal?
+
+    //add IR
+    //switch() over it to decide on a course of action.
+    switch (IR) {
       case LDI:
         print("LDI\n");
         break;
@@ -104,28 +116,33 @@ void cpu_run(struct cpu *cpu)
         print("PRN\n");
         break;
 
-      default:
-        print("exit loop\n");
-        HLT;
-        running = 0;
+      case HLT:
+        running = 0
         break;
+
+      default:
+        exit(1);
       }
-    // 5. Do whatever the instruction should do according to the spec.
-    // 6. Move the PC to the next instruction.
-    PC++;
+    // Do whatever the instruction should do according to the spec.
+    // Move the PC to the next instruction.
+    cpu->PC = num_op++;
   }
   return 0;
 }
 
 //Added RAM functions
-void cpu_ram_read(struct cpu *cpu) {
-  //access the RAM inside the struct cpu
-  return cpu->ram;//[cpu->pc];
+void cpu_ram_read(struct cpu *cpu) 
+{
+  //think about index
+  //read from a specific index in Ram
+  return cpu->ram[index];
 }
 
-void cpu_ram_write(struct cpu *cpu) {
-  //access the RAM inside the struct cpu
-  return cpu->ram;
+void cpu_ram_write(struct cpu *cpu) 
+{
+  //think about index
+  //specified index in ram is being written to the pc
+  cpu->ram[index] = cpu->PC
 }
 
 /**
@@ -135,7 +152,7 @@ void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
   //int PC = 0;
-  cpu->pc = 0
+  cpu->PC = 0
   //first, the PC, registers, and RAM should be cleared to zero
   memset(cpu->registers, 0, 8);
   memset(cpu->ram, 0, 256);
