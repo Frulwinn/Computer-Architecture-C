@@ -1,13 +1,31 @@
 #include "cpu.h"
 #include <stdio.h>
-#include <stlib.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define DATA_LEN 6
+
+//Added RAM functions
+//missing index in parameters
+unsigned char cpu_ram_read(struct cpu *cpu, unsigned char index) 
+{
+  //think about index
+  //read value from a specific index in Ram
+  return cpu->ram[index];
+}
+
+//missing index and value in parameters
+void cpu_ram_write(struct cpu *cpu, unsigned char index, unsigned char value) 
+{
+  //think about index
+  //write ram index to value
+  cpu->ram[index] = value;
+}
 
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
-void cpu_load(struct cpu *cpu)
+void cpu_load(struct cpu *cpu, char *filename)
 {
   char data[DATA_LEN] = {
     // From print8.ls8
@@ -27,23 +45,18 @@ void cpu_load(struct cpu *cpu)
 
   // TODO: Replace this with something less hard-coded
   FILE *fp;
-  char line = [1024]
+  char line[1024];
 
-  //check
-    if (argc != 2) {
-        printf("usage: filesio filename\n");
-        return 1;
-    }
-
-    fp = fopen(argv[1], "r");
+    //open file
+    fp = fopen(filename, "r");
 
     //error checking
     if (fp == NULL) {
-        printf("error opening file %s\n", argv[1]);
+        printf("error opening file %s\n", filename);
     }
 
     //saving, terminating, at file
-    while (fgets(line, 1024, fp) ! = NULL) {
+    while (fgets(line, 1024, fp) != NULL) {
         //if there is an error
         char *endptr;
         unsigned char val = strtoul(line, &endptr, 2);
@@ -62,6 +75,11 @@ void cpu_load(struct cpu *cpu)
  */
 void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB)
 {
+//hack to fix warning unused parameter
+(void)cpu;
+(void)regA;
+(void)regB;
+
   switch (op) {
     case ALU_MUL:
       // TODO
@@ -82,8 +100,9 @@ void cpu_run(struct cpu *cpu)
     //4 variables opA, opB, IR (use ram read in these var)
     unsigned char opA = 0;
     unsigned char opB = 0;
-    unsigned char IR = cpu_ram_read;
-    //need another variable using bitwise to read by shifting 6
+    //included complete parameters for func
+    unsigned char IR = cpu_ram_read(cpu, cpu->PC);
+    //need another variable using bitwise to read by shifting 6 only need 2
     unsigned int num_op = IR >> 6;
 
     //if else what to do when you have 2 or 1 operand
@@ -91,59 +110,62 @@ void cpu_run(struct cpu *cpu)
     // Get the appropriate value(s) of the operands following this instruction
     //read the bytes at PC+1 and PC+2 from RAM into variables operandA and operandB
     if (num_op == 2) {
-      opA = cpu_ram_read(cpu->PC + 1);
-      opB = cpu_ram_read(cpu->PC + 2);
+      //added complete parameter
+      opA = cpu_ram_read(cpu, (cpu->PC + 1));
+      opB = cpu_ram_read(cpu, (cpu->PC + 2));
     } else if (num_op == 1) {
-      opA = cpu_ram_read(cpu->PC + 1);
-    } else {
-      return 0;
-    }
+      //added complete parameter
+      opA = cpu_ram_read(cpu, (cpu->PC + 1));
+      
+    } 
 
     // Get the value of the current instruction (in address PC).
     // Figure out how many operands this next instruction requires
-    int pc_instruction = IR;
-    
-    //state with hex decimal?
+    //int pc_instruction = (IR);
 
     //add IR
     //switch() over it to decide on a course of action.
     switch (IR) {
+      
       case LDI:
-        print("LDI\n");
+        //Set the value of a register to an integer
+        cpu->registers[opA] = opB;
         break;
 
       case PRN:
-        print("PRN\n");
+        //Print numeric value stored in the given register.
+        //Print to the console the decimal integer value that is stored in the given register
+        printf("%d\n", cpu->registers[opA]);
         break;
 
       case HLT:
-        running = 0
+        //Halt the CPU (and exit the emulator).
+        running = 0;
         break;
 
+      case PUSH:
+        
+        break;
+
+      case POP:
+      
+        break;
+
+
       default:
+        printf("Unrecognized instruction\n");
         exit(1);
+        break;
       }
     // Do whatever the instruction should do according to the spec.
     // Move the PC to the next instruction.
-    cpu->PC = num_op++;
-  }
-  return 0;
+    //incrementing pc by the number of arguments passed to the instructions executed
+    cpu->PC += num_op + 1;
+  } //closing while
+  
 }
 
-//Added RAM functions
-void cpu_ram_read(struct cpu *cpu) 
-{
-  //think about index
-  //read from a specific index in Ram
-  return cpu->ram[index];
-}
 
-void cpu_ram_write(struct cpu *cpu) 
-{
-  //think about index
-  //specified index in ram is being written to the pc
-  cpu->ram[index] = cpu->PC
-}
 
 /**
  * Initialize a CPU struct
@@ -152,7 +174,7 @@ void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
   //int PC = 0;
-  cpu->PC = 0
+  cpu->PC = 0;
   //first, the PC, registers, and RAM should be cleared to zero
   memset(cpu->registers, 0, 8);
   memset(cpu->ram, 0, 256);
