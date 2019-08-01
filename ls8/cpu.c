@@ -30,34 +30,31 @@ unsigned char cpu_pop(struct cpu *cpu)
   return value;
 }
 
-/**
- * Load the binary bytes from a .ls8 source file into a RAM array
- */
 void cpu_load(char *filename, struct cpu *cpu)
 {
   FILE *fp;
   char line[1024];
   int address = ADDR_PROGRAM_ENTRY;
 
-  // Open the source file
+  //open the source file
   if ((fp = fopen(filename, "r")) == NULL) {
     fprintf(stderr, "Cannot open file %s\n", filename);
     exit(2);
   }
 
-  // Read all the lines and store them in RAM
+  //read all the lines and store them in RAM
   while (fgets(line, sizeof line, fp) != NULL) {
 
-    // Convert string to a number
+    //convert string to a number
     char *endchar;
     unsigned char byte = strtol(line, &endchar, 2);;
 
-    // Ignore lines from which no numbers were read
+    //ignore lines from which no numbers were read
     if (endchar == line) {
       continue;
     }
 
-    // Store in ram
+    //store in ram
     cpu_ram_write(cpu, byte, address++);
   }
 }
@@ -83,17 +80,17 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
       break;
 
     case ALU_CMP:
-      // Clear the < > = flags before setting the appropriate one
+      //clear the < > = flags before setting the appropriate one
       cpu->FL &= ~0b111;
 
       if (cpu->registers[regA] == regB) {
-        // Set the last bit of FL to 1
+        //set the last bit of FL to 1
         cpu->FL = cpu->FL | (1 << 0);
       } else if (cpu->registers[regA] > regB) {
-        // Set the second-to-last bit of FL to 1
+        //set the second-to-last bit of FL to 1
         cpu->FL = cpu->FL | (1 << 1);
       } else {
-        // Set the third-to-last bit of FL to 1
+        //set the third-to-last bit of FL to 1
         cpu->FL = cpu->FL | (1 << 2);
       }
       break;
@@ -112,15 +109,15 @@ void cpu_run(struct cpu *cpu)
     unsigned int num_op = IR >> 6;
 
     if (num_op == 2) {
-      opA = cpu_ram_read(cpu, (cpu->PC + 1) & 0xff);
-      opB = cpu_ram_read(cpu, (cpu->PC + 2) & 0xff);
+      opA = cpu_ram_read(cpu, (cpu->PC + 1));
+      opB = cpu_ram_read(cpu, (cpu->PC + 2));
     } else if (num_op == 1) {
-      opA = cpu_ram_read(cpu, (cpu->PC + 1) & 0xff);
+      opA = cpu_ram_read(cpu, (cpu->PC + 1));
     } 
 
-    // This line is shifting the instruction by 4 bits to access
-    // the flag that indicates whether the PC might be set, and
-    // then seeing if the bit is set to 0 or 1
+    //this line is shifting the instruction by 4 bits to access
+    //the flag that indicates whether the PC might be set, and
+    //then seeing if the bit is set to 0 or 1
     int instruction_set_pc = (IR >> 4) & 1;
 
     switch (IR) {
@@ -144,13 +141,13 @@ void cpu_run(struct cpu *cpu)
         running = 0;
         break;
 
-      case PUSH:
-        cpu_push(cpu, cpu->registers[opA]);
-        break;
+      // case PUSH:
+      //   cpu_push(cpu, cpu->registers[opA]);
+      //   break;
 
-      case POP:
-        cpu->registers[opA] = cpu_pop(cpu);
-        break;
+      // case POP:
+      //   cpu->registers[opA] = cpu_pop(cpu);
+      //   break;
 
       default:
         fprintf(stderr, "PC %02x: unknown instruction %02x\n", cpu->PC, IR);
@@ -158,7 +155,7 @@ void cpu_run(struct cpu *cpu)
     }
 
     if (!instruction_set_pc) {
-      // Increment PC by the number of arguments that were passed to the instruction we just executed
+      //increment PC by the number of arguments that were passed to the instruction we just executed
       cpu->PC += num_op + 1;
     }
   }
@@ -169,10 +166,10 @@ void cpu_init(struct cpu *cpu)
   cpu->PC = 0;
   cpu->FL = 0;
 
-  // Zero registers and RAM
+  //zero registers and RAM
   memset(cpu->registers, 0, sizeof cpu->registers);
   memset(cpu->ram, 0, sizeof cpu->ram);
 
-  // Initialize SP
+  //initialize SP
   cpu->registers[7] = ADDR_EMPTY_STACK;
 }
