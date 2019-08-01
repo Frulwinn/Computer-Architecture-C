@@ -1,122 +1,95 @@
-#include "cpu.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "cpu.h"
 
-#define DATA_LEN 6
 
-unsigned char cpu_ram_read(struct cpu *cpu, unsigned char index) 
+unsigned char cpu_ram_read(struct cpu *cpu, unsigned char index)
 {
-  //think about index
-  //read value from a specific index in Ram
   return cpu->ram[index];
 }
 
-//missing index and value in parameters
-void cpu_ram_write(struct cpu *cpu, unsigned char index, unsigned char value) 
+void cpu_ram_write(struct cpu *cpu, unsigned char value, unsigned char index)
 {
-  //think about index
-  //write ram index to value
   cpu->ram[index] = value;
+}
+
+//push a value on the CPU stack
+void cpu_push(struct cpu *cpu, unsigned char value)
+{
+  cpu->registers[7]--;
+  cpu_ram_write(cpu, value, cpu->registers[7]);
+}
+
+//pop a value from the CPU stack
+unsigned char cpu_pop(struct cpu *cpu)
+{
+  unsigned char value = cpu_ram_read(cpu, cpu->registers[7]);
+  cpu->registers[7]++;
+
+  return value;
 }
 
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
-void cpu_load(struct cpu *cpu, char *filename)
+void cpu_load(char *filename, struct cpu *cpu)
 {
-  char data[DATA_LEN] = {
-    // From print8.ls8
-    0b10000010, // LDI R0,8
-    0b00000000,
-    0b00001000,
-    0b01000111, // PRN R0
-    0b00000000,
-    0b00000001  // HLT
-  };
-
-  int address = 0;
-
-  for (int i = 0; i < DATA_LEN; i++) {
-    cpu->ram[address++] = data[i];
-  }
-
-  // TODO: Replace this with something less hard-coded
   FILE *fp;
   char line[1024];
+  int address = ADDR_PROGRAM_ENTRY;
 
-    //open file
-    //error checking
-    if ((fp = fopen(filename, "r")) == NULL) {
-      printf("error opening file %s\n", filename);
-      exit(2);
+  // Open the source file
+  if ((fp = fopen(filename, "r")) == NULL) {
+    fprintf(stderr, "Cannot open file %s\n", filename);
+    exit(2);
+  }
+
+  // Read all the lines and store them in RAM
+  while (fgets(line, sizeof line, fp) != NULL) {
+
+    // Convert string to a number
+    char *endchar;
+    unsigned char byte = strtol(line, &endchar, 2);;
+
+    // Ignore lines from which no numbers were read
+    if (endchar == line) {
+      continue;
     }
 
-    //saving, terminating, at file reading the lines and storing it in the RAM
-    while (fgets(line, 1024, fp) != NULL) {
-        //if there is an error
-        char *endptr;
-        unsigned char val = strtoul(line, &endptr, 2);
-
-        //error checking if you get jibberish code
-        if (line == endptr) {
-          printf("This is just a comment: %s", line);
-          continue;
-        }
-        //write in ram
-        cpu_ram_write(cpu, val, address++);
-        printf("%02x\n", val);
-    }
-    fclose(fp);
+    // Store in ram
+    cpu_ram_write(cpu, byte, address++);
+  }
 }
 
-/**
- * ALU
- */
 void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB)
 {
-//hack to fix warning unused parameter
-// (void)cpu;
-// (void)regA;
-// (void)regB;
-
-  unsigned char *reg = cpu->registers;
-  unsigned char valB = reg[regB];
 
   switch (op) {
-    //Multiply the values in two registers together and 
-    //store the result in registerA
     case ALU_MUL:
-      reg[regA] *= valB;
+      cpu->registers[regA] *= cpu->registers[regB];
       break;
 
-    //Add the value in two registers and store the result in registerA.
     case ALU_ADD:
-      reg[regA] += valB;
+      cpu->registers[regA] += cpu->registers[regB];
       break;
 
-    //Increment (add 1 to) the value in the given register.
     case ALU_INC:
-      reg[regA]++;
+      cpu->registers[regA]++;
       break;
 
-    //Decrement (subtract 1 from) the value in the given register.
     case ALU_DEC:
-      reg[regA]--;
+      cpu->registers[regA]--;
       break;
 
-    //Compare the values in two registers.
-    //If they are equal, set the Equal E flag to 1, otherwise set it to 0.
-    //If registerA is less than registerB, set the Less-than L flag to 1, otherwise set it to 0.
-    //If registerA is greater than registerB, set the Greater-than G flag to 1, otherwise set it to 0.
     case ALU_CMP:
       // Clear the < > = flags before setting the appropriate one
       cpu->FL &= ~0b111;
 
-      if (reg[regA] == valB) {
+      if (cpu->registers[regA] == regB) {
         // Set the last bit of FL to 1
         cpu->FL = cpu->FL | (1 << 0);
-      } else if (reg[regA] > valB) {
+      } else if (cpu->registers[regA] > regB) {
         // Set the second-to-last bit of FL to 1
         cpu->FL = cpu->FL | (1 << 1);
       } else {
@@ -127,95 +100,79 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   }
 }
 
-/**
- * Run the CPU
- */
 void cpu_run(struct cpu *cpu)
 {
+
   int running = 1; // True until we get a HLT instruction
 
-  cpu->registers[7] = 120;
-
   while (running) {
-    //4 variables opA, opB, IR (use ram read in these var)
     unsigned char opA = 0;
     unsigned char opB = 0;
-    //included complete parameters for func
     unsigned char IR = cpu_ram_read(cpu, cpu->PC);
-    //need another variable using bitwise to read by shifting 6 only need 2
     unsigned int num_op = IR >> 6;
 
-    //if else what to do when you have 2 or 1 operand
-    //ram read cpu
-    // Get the appropriate value(s) of the operands following this instruction
-    //read the bytes at PC+1 and PC+2 from RAM into variables operandA and operandB
     if (num_op == 2) {
-      //added complete parameter
-      opA = cpu_ram_read(cpu, (cpu->PC + 1));
-      opB = cpu_ram_read(cpu, (cpu->PC + 2));
+      opA = cpu_ram_read(cpu, (cpu->PC + 1) & 0xff);
+      opB = cpu_ram_read(cpu, (cpu->PC + 2) & 0xff);
     } else if (num_op == 1) {
-      //added complete parameter
-      opA = cpu_ram_read(cpu, (cpu->PC + 1));
-      
+      opA = cpu_ram_read(cpu, (cpu->PC + 1) & 0xff);
     } 
 
-    // Get the value of the current instruction (in address PC).
-    // Figure out how many operands this next instruction requires
-    //int pc_instruction = (IR);
+    // This line is shifting the instruction by 4 bits to access
+    // the flag that indicates whether the PC might be set, and
+    // then seeing if the bit is set to 0 or 1
+    int instruction_set_pc = (IR >> 4) & 1;
 
-    //add IR
-    //switch() over it to decide on a course of action.
     switch (IR) {
-      
       case LDI:
-        //Set the value of a register to an integer
         cpu->registers[opA] = opB;
         break;
 
       case PRN:
-        //Print numeric value stored in the given register.
-        //Print to the console the decimal integer value that is stored in the given register
         printf("%d\n", cpu->registers[opA]);
         break;
 
+      case MUL:
+        alu(cpu, ALU_MUL, opA, opB);
+        break;
+
+      case ADD:
+        alu(cpu, ALU_ADD, opA, opB);
+        break;
+
       case HLT:
-        //Halt the CPU (and exit the emulator).
         running = 0;
         break;
 
       case PUSH:
-        
+        cpu_push(cpu, cpu->registers[opA]);
         break;
 
       case POP:
-      
+        cpu->registers[opA] = cpu_pop(cpu);
         break;
-
 
       default:
-        printf("Unrecognized instruction\n");
-        exit(1);
-        break;
-      }
-    // Do whatever the instruction should do according to the spec.
-    // Move the PC to the next instruction.
-    //incrementing pc by the number of arguments passed to the instructions executed
-    cpu->PC += num_op + 1;
-  } //closing while
-  
+        fprintf(stderr, "PC %02x: unknown instruction %02x\n", cpu->PC, IR);
+        exit(2);
+    }
+
+    if (!instruction_set_pc) {
+      // Increment PC by the number of arguments that were passed to the instruction we just executed
+      cpu->PC += num_op + 1;
+    }
+  }
 }
 
-
-
-/**
- * Initialize a CPU struct
- */
 void cpu_init(struct cpu *cpu)
 {
-  // TODO: Initialize the PC and other special registers
-  //int PC = 0;
   cpu->PC = 0;
-  //first, the PC, registers, and RAM should be cleared to zero
-  memset(cpu->registers, 0, 8);
-  memset(cpu->ram, 0, 256);
+  cpu->FL = 0;
+
+  // Zero registers and RAM
+  memset(cpu->registers, 0, sizeof cpu->registers);
+  memset(cpu->ram, 0, sizeof cpu->ram);
+
+  // Initialize SP
+  cpu->registers[7] = ADDR_EMPTY_STACK;
 }
