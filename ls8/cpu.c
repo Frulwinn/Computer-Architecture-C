@@ -5,8 +5,6 @@
 
 #define DATA_LEN 6
 
-//Added RAM functions
-//missing index in parameters
 unsigned char cpu_ram_read(struct cpu *cpu, unsigned char index) 
 {
   //think about index
@@ -48,14 +46,13 @@ void cpu_load(struct cpu *cpu, char *filename)
   char line[1024];
 
     //open file
-    fp = fopen(filename, "r");
-
     //error checking
-    if (fp == NULL) {
-        printf("error opening file %s\n", filename);
+    if ((fp = fopen(filename, "r")) == NULL) {
+      printf("error opening file %s\n", filename);
+      exit(2);
     }
 
-    //saving, terminating, at file
+    //saving, terminating, at file reading the lines and storing it in the RAM
     while (fgets(line, 1024, fp) != NULL) {
         //if there is an error
         char *endptr;
@@ -63,8 +60,11 @@ void cpu_load(struct cpu *cpu, char *filename)
 
         //error checking if you get jibberish code
         if (line == endptr) {
-            printf("This is just a comment: %s", line);
+          printf("This is just a comment: %s", line);
+          continue;
         }
+        //write in ram
+        cpu_ram_write(cpu, val, address++);
         printf("%02x\n", val);
     }
     fclose(fp);
@@ -76,16 +76,54 @@ void cpu_load(struct cpu *cpu, char *filename)
 void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB)
 {
 //hack to fix warning unused parameter
-(void)cpu;
-(void)regA;
-(void)regB;
+// (void)cpu;
+// (void)regA;
+// (void)regB;
+
+  unsigned char *reg = cpu->registers;
+  unsigned char valB = reg[regB];
 
   switch (op) {
+    //Multiply the values in two registers together and 
+    //store the result in registerA
     case ALU_MUL:
-      // TODO
+      reg[regA] *= valB;
       break;
 
-    // TODO: implement more ALU ops
+    //Add the value in two registers and store the result in registerA.
+    case ALU_ADD:
+      reg[regA] += valB;
+      break;
+
+    //Increment (add 1 to) the value in the given register.
+    case ALU_INC:
+      reg[regA]++;
+      break;
+
+    //Decrement (subtract 1 from) the value in the given register.
+    case ALU_DEC:
+      reg[regA]--;
+      break;
+
+    //Compare the values in two registers.
+    //If they are equal, set the Equal E flag to 1, otherwise set it to 0.
+    //If registerA is less than registerB, set the Less-than L flag to 1, otherwise set it to 0.
+    //If registerA is greater than registerB, set the Greater-than G flag to 1, otherwise set it to 0.
+    case ALU_CMP:
+      // Clear the < > = flags before setting the appropriate one
+      cpu->FL &= ~0b111;
+
+      if (reg[regA] == valB) {
+        // Set the last bit of FL to 1
+        cpu->FL = cpu->FL | (1 << 0);
+      } else if (reg[regA] > valB) {
+        // Set the second-to-last bit of FL to 1
+        cpu->FL = cpu->FL | (1 << 1);
+      } else {
+        // Set the third-to-last bit of FL to 1
+        cpu->FL = cpu->FL | (1 << 2);
+      }
+      break;
   }
 }
 
@@ -95,6 +133,8 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
 void cpu_run(struct cpu *cpu)
 {
   int running = 1; // True until we get a HLT instruction
+
+  cpu->registers[7] = 120;
 
   while (running) {
     //4 variables opA, opB, IR (use ram read in these var)
